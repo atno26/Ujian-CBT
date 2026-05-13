@@ -224,7 +224,7 @@
   .dot.empty { border: 2px solid var(--border); background: white; }
 
   /* Overlays */
-  .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(5px); z-index: 100; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+  .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(5px); z-index: 100; display: flex; align-items: center; justify-content: center; flex-direction: column; color: white; }
   .cheat-warning-text { color: var(--danger); font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; letter-spacing: 2px; text-shadow: 0 4px 10px rgba(239, 68, 68, 0.5); }
   
   .review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
@@ -309,13 +309,13 @@
 <div id="login-screen">
   <div class="card login-box">
     <div class="school-logo" style="background-color: transparent; box-shadow: none;">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/a/a7/Lambang_Kabupaten_Rote_Ndao.jpeg" alt="Logo Sekolah" style="width: 100%; height: 100%; object-fit: contain;">
-  </div> 
+      <img src="https://upload.wikimedia.org/wikipedia/commons/a/a7/Lambang_Kabupaten_Rote_Ndao.jpeg" alt="Logo Sekolah" style="width: 100%; height: 100%; object-fit: contain;">
+    </div> 
     <h2 style="margin-bottom: 0.2rem;">SMPN 3 Lobalain</h2>
     <h3 style="margin-bottom: 0.3rem;">Mata Pelajaran Matematika</h3>
     <p class="text-muted" style="margin-bottom: 2rem; font-size: 0.9rem;">Sumatif Tengah Semester Genap</p>
     
-    <div id="login-error" class="hidden" style="color: var(--danger); margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500; background: #fee2e2; padding: 0.8rem; border-radius: 8px; border: 1px solid #fecaca;"></div>
+    <div id="login-error" class="hidden" style="color: var(--danger); margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500; background: #fee2e2; padding: 0.8rem; border-radius: 8px; border: 1px solid #fca5a5;"></div>
 
     <div class="form-group">
       <label>Nama Lengkap</label>
@@ -542,85 +542,78 @@ function attemptLogin() {
   btnLogin.innerText = "Memeriksa...";
   btnLogin.disabled = true;
 
- fetch(API_URL, {
-  method: "POST",
-  body: JSON.stringify({
-    action: "login",
-    nama: nama,
-    kelas: kelas,
-    password: pass
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "login",
+      nama: nama,
+      kelas: kelas,
+      password: pass
+    })
   })
-})
-.then(res => res.json())
-.then(response => {
+  .then(res => res.json())
+  .then(response => {
 
-  if(response.status === "success") {
+    if(response.status === "success") {
 
-    studentData = {
-      nama: response.nama,
-      kelas: response.kelas
-    };
+      studentData = {
+        nama: response.nama,
+        kelas: response.kelas
+      };
 
-    document.getElementById('display-nama').innerText = response.nama;
-    document.getElementById('display-kelas').innerText = response.kelas;
+      document.getElementById('display-nama').innerText = response.nama;
+      document.getElementById('display-kelas').innerText = response.kelas;
 
-    btnLogin.innerText = "Memuat Soal...";
+      btnLogin.innerText = "Memuat Soal...";
 
-    // AMBIL SOAL
-    fetch(API_URL + "?action=getQuestions")
-    .then(res => res.json())
-    .then(qData => {
+      // AMBIL SOAL
+      fetch(API_URL + "?action=getQuestions")
+      .then(res => res.json())
+      .then(qData => {
 
-      if (qData.length === 0) {
+        if (qData.length === 0) {
+          errorDiv.innerText = "Tidak ada soal tersedia. Hubungi panitia.";
+          errorDiv.classList.remove('hidden');
 
-        errorDiv.innerText = "Tidak ada soal tersedia. Hubungi panitia.";
+          btnLogin.innerText = "MULAI UJIAN";
+          btnLogin.disabled = false;
+
+          return;
+        }
+
+        questions = qData;
+
+        document.getElementById('login-screen').classList.add('hidden');
+
+        requestFullScreen();
+
+        startExam(false);
+
+      })
+      .catch(err => {
+        errorDiv.innerText = "Gagal memuat soal";
         errorDiv.classList.remove('hidden');
 
         btnLogin.innerText = "MULAI UJIAN";
         btnLogin.disabled = false;
+      });
 
-        return;
-      }
-
-      questions = qData;
-
-      document.getElementById('login-screen').classList.add('hidden');
-
-      requestFullScreen();
-
-      startExam(false);
-
-    })
-    .catch(err => {
-
-      errorDiv.innerText = "Gagal memuat soal";
+    } else {
+      errorDiv.innerText = "⚠️ Token ujian salah!";
       errorDiv.classList.remove('hidden');
 
       btnLogin.innerText = "MULAI UJIAN";
       btnLogin.disabled = false;
+    }
 
-    });
-
-  } else {
-
-    errorDiv.innerText = "⚠️ Token ujian salah!";
+  })
+  .catch(err => {
+    errorDiv.innerText = "Terjadi kesalahan koneksi";
     errorDiv.classList.remove('hidden');
 
     btnLogin.innerText = "MULAI UJIAN";
     btnLogin.disabled = false;
-
-  }
-
-})
-.catch(err => {
-
-  errorDiv.innerText = "Terjadi kesalahan koneksi";
-  errorDiv.classList.remove('hidden');
-
-  btnLogin.innerText = "MULAI UJIAN";
-  btnLogin.disabled = false;
-
-});
+  });
 }
 
 function requestFullScreen() {
@@ -873,45 +866,37 @@ function submitData() {
     logKecurangan: cheatLogs
   };
 
-fetch(API_URL, {
-  method: "POST",
-  body: JSON.stringify({
-    action: "submitExam",
-    ...payload
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "submitExam",
+      ...payload
+    })
   })
-})
-.then(res => res.json())
-.then(res => {
+  .then(res => res.json())
+  .then(res => {
 
-  if(res.status === "success") {
+    if(res.status === "success") {
+      localStorage.removeItem('cbt_exam_state');
+      document.getElementById('review-screen').classList.add('hidden');
+      document.getElementById('success-screen').classList.remove('hidden');
 
-    localStorage.removeItem('cbt_exam_state');
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
 
-    document.getElementById('review-screen').classList.add('hidden');
-
-    document.getElementById('success-screen').classList.remove('hidden');
-
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
+    } else {
+      alert("Gagal menyimpan data: " + res.message);
+      btnSubmit.innerText = "KIRIM SEKARANG";
+      btnSubmit.disabled = false;
     }
 
-  } else {
-
-    alert("Gagal menyimpan data: " + res.message);
-
+  })
+  .catch(err => {
+    alert("Gagal menghubungi server. Silakan coba lagi.");
     btnSubmit.innerText = "KIRIM SEKARANG";
     btnSubmit.disabled = false;
-  }
-
-})
-.catch(err => {
-
-  alert("Gagal menghubungi server. Silakan coba lagi.");
-
-  btnSubmit.innerText = "KIRIM SEKARANG";
-  btnSubmit.disabled = false;
-
-});
+  });
 }
 
 // 8. ANTI CHEAT SYSTEM
