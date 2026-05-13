@@ -224,7 +224,7 @@
   .dot.empty { border: 2px solid var(--border); background: white; }
 
   /* Overlays */
-  .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(5px); z-index: 100; display: flex; align-items: center; justify-content: center; color: white; flex-direction: column; text-align: center; padding: 2rem; }
+  .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(5px); z-index: 100; display: flex; align-items: center; justify-content: center; flex-direction: column; }
   .cheat-warning-text { color: var(--danger); font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; letter-spacing: 2px; text-shadow: 0 4px 10px rgba(239, 68, 68, 0.5); }
   
   .review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
@@ -315,7 +315,7 @@
     <h3 style="margin-bottom: 0.3rem;">Mata Pelajaran Matematika</h3>
     <p class="text-muted" style="margin-bottom: 2rem; font-size: 0.9rem;">Sumatif Tengah Semester Genap</p>
     
-    <div id="login-error" class="hidden" style="color: var(--danger); margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500; background: #fee2e2; padding: 0.8rem; border-radius: 8px; border: 1px solid #fca5a5;"></div>
+    <div id="login-error" class="hidden" style="color: var(--danger); margin-bottom: 1.5rem; font-size: 0.9rem; font-weight: 500; background: #fee2e2; padding: 0.8rem; border-radius: 8px; border: 1px solid #fecaca;"></div>
 
     <div class="form-group">
       <label>Nama Lengkap</label>
@@ -476,7 +476,7 @@
 <!-- CHEAT WARNING OVERLAY -->
 <div id="cheat-overlay" class="overlay hidden">
   <div class="cheat-warning-text">⚠️ PERINGATAN KECURANGAN</div>
-  <p style="font-size: 1.1rem; max-width: 600px; line-height: 1.5; font-weight: 500;">Anda terdeteksi keluar dari layar ujian atau membuka tab/aplikasi lain. Aktivitas ini telah dicatat dalam sistem.</p>
+  <p style="font-size: 1.1rem; max-width: 600px; line-height: 1.5; font-weight: 500; color: white;">Anda terdeteksi keluar dari layar ujian atau membuka tab/aplikasi lain. Aktivitas ini telah dicatat dalam sistem.</p>
   <p style="margin-top: 1.5rem; color: #94a3b8; font-size: 0.85rem;">(Pesan ini akan hilang otomatis dalam 4 detik)</p>
 </div>
 
@@ -621,6 +621,7 @@ function attemptLogin() {
   btnLogin.disabled = false;
 
 });
+}
 
 function requestFullScreen() {
     var docElm = document.documentElement;
@@ -911,6 +912,7 @@ fetch(API_URL, {
   btnSubmit.disabled = false;
 
 });
+}
 
 // 8. ANTI CHEAT SYSTEM
 function setupCheatDetection() {
