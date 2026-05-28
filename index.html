@@ -479,7 +479,7 @@
   <p id="cheat-reason" style="font-size: 1.2rem; margin-bottom: 1rem; color: #fca5a5; font-weight: 600;"></p>
   <p style="font-size: 1.1rem; max-width: 600px; line-height: 1.5; font-weight: 500;">Anda terdeteksi keluar dari layar ujian, membuka aplikasi lain, atau menggunakan layar ganda. Aktivitas ini dicatat di server!</p>
   <p id="cheat-strike-text" style="margin-top: 1.5rem; font-size: 1.3rem; font-weight: 800; color: var(--warning); background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; border: 1px solid var(--warning);"></p>
-  <p style="margin-top: 1.5rem; color: #94a3b8; font-size: 0.85rem;">(Pesan ini akan hilang otomatis dalam 5 detik)</p>
+  <p id="cheat-action-tip" style="margin-top: 1.5rem; color: #94a3b8; font-size: 0.85rem;">(Pesan ini akan hilang otomatis dalam 5 detik)</p>
 </div>
 
 <script>
@@ -497,7 +497,6 @@ let studentData = {};
 let isExamRunning = false;
 let cheatLogs = [];
 let cheatStrikes = 0; // Menghitung jumlah pelanggaran
-const MAX_STRIKES = 3; // Batas maksimal pelanggaran sebelum auto-submit
 
 // WAJIB DIISI: Masukkan URL Web App Google Apps Script Anda di sini!
 const API_URL = "https://script.google.com/macros/s/AKfycbyRw1gW1IhU0gcLZ1AqhPr4EUdqd7X7NY39IMXYseZqcbrFwY4YInNlLESKBgBmpce9xA/exec";
@@ -512,12 +511,36 @@ window.onload = function() {
     const savedState = localStorage.getItem('cbt_exam_state');
     if(savedState) {
         const state = JSON.parse(savedState);
+        // Memeriksa jika status sebelumnya terkunci, langsung kunci kembali tanpa konfirmasi lanjut
+        if (state.isExamLocked) {
+            studentData = state.studentData;
+            userAnswers = state.answers;
+            flaggedQuestions = state.flags;
+            timeLeft = state.timeLeft;
+            questions = state.questions || [];
+            cheatLogs = state.cheatLogs || [];
+            cheatStrikes = state.cheatStrikes || 0;
+            isExamLocked = true;
+            
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('display-nama').innerText = studentData.nama;
+            document.getElementById('display-kelas').innerText = studentData.kelas;
+            
+            // Langsung tampilkan overlay kunci permanen
+            isExamRunning = false;
+            document.getElementById('exam-screen').classList.remove('hidden');
+            showLockedCheatOverlay("Sesi ujian Anda terkunci secara permanen.");
+            return;
+        }
+
         if(confirm("Ditemukan sesi ujian yang belum selesai. Apakah Anda ingin melanjutkan?")) {
             studentData = state.studentData;
             userAnswers = state.answers;
             flaggedQuestions = state.flags;
             timeLeft = state.timeLeft;
             questions = state.questions || []; 
+            cheatLogs = state.cheatLogs || [];
+            cheatStrikes = state.cheatStrikes || 0;
             
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('display-nama').innerText = studentData.nama;
@@ -626,20 +649,23 @@ function startExam(isResume) {
 }
 
 function saveStateToLocal() {
-    if(isExamRunning) {
-        const state = {
-            studentData: studentData,
-            answers: userAnswers,
-            flags: flaggedQuestions,
-            timeLeft: timeLeft,
-            questions: questions 
-        };
-        localStorage.setItem('cbt_exam_state', JSON.stringify(state));
-    }
+    // Tetap simpan state meskipun ujian dihentikan/terkunci agar tidak bisa dicurangi lewat refresh
+    const state = {
+        studentData: studentData,
+        answers: userAnswers,
+        flags: flaggedQuestions,
+        timeLeft: timeLeft,
+        questions: questions,
+        cheatLogs: cheatLogs,
+        cheatStrikes: cheatStrikes,
+        isExamLocked: isExamLocked
+    };
+    localStorage.setItem('cbt_exam_state', JSON.stringify(state));
 }
 
 // 3. RENDER SOAL & GRID
 function renderQuestion(index) {
+  if (isExamLocked) return; // Mencegah interaksi jika terkunci
   const q = questions[index];
   
   // Memicu animasi pergantian soal (Fade In)
@@ -717,6 +743,7 @@ function buildNumberGrid() {
 
 // 4. INTERAKSI USER
 function selectOption(qIndex, optionText) {
+  if (isExamLocked) return;
   userAnswers[qIndex] = optionText;
   
   // Highlight UI Option (tanpa full re-render agar lebih smooth)
@@ -734,6 +761,7 @@ function selectOption(qIndex, optionText) {
 }
 
 function toggleFlag() {
+  if (isExamLocked) return;
   const isChecked = document.getElementById('flag-checkbox').checked;
   if(isChecked) {
     flaggedQuestions[currentQuestionIndex] = true;
@@ -785,6 +813,7 @@ function updateGridHighlight() {
 
 // 6. TIMER LOGIC
 function updateTimer() {
+  if (isExamLocked) return;
   if (timeLeft <= 0) {
     clearInterval(timerInterval);
     alert("Waktu habis! Jawaban akan dikirim otomatis.");
@@ -811,6 +840,7 @@ function updateTimer() {
 
 // 7. REVIEW & SUBMIT
 function showReview() {
+  if (isExamLocked) return;
   const total = questions.length;
   const answered = Object.keys(userAnswers).length;
   const flagged = Object.keys(flaggedQuestions).length;
@@ -885,18 +915,18 @@ function submitData() {
   });
 }
 
-// 8. ANTI CHEAT SYSTEM (SISTEM KETAT)
+// 8. ANTI CHEAT SYSTEM (SISTEM KETAT - TIDAK AUTO-SEND, HANYA LOCK SCREEN)
 function setupCheatDetection() {
   // 1. Deteksi Minimize atau Pindah Tab
   document.addEventListener("visibilitychange", function() {
-    if (document.hidden && isExamRunning) {
+    if (document.hidden && isExamRunning && !isExamLocked) {
       handleCheatViolation("Pindah Tab / Minimize Aplikasi");
     }
   });
 
   // 2. Deteksi Kehilangan Fokus (Layar Mengambang / Floating App / Buka Notifikasi)
   window.addEventListener("blur", function() {
-    if (isExamRunning && !document.hidden) {
+    if (isExamRunning && !document.hidden && !isExamLocked) {
       handleCheatViolation("Layar Kehilangan Fokus (Indikasi Floating App / Buka Notif)");
     }
   });
@@ -920,19 +950,14 @@ function handleCheatViolation(type) {
   cheatLogs.push(`${type} pada ${time}`);
   cheatStrikes++;
 
-  // Cek apakah sudah melebihi batas maksimal pelanggaran
-  if (cheatStrikes >= MAX_STRIKES) {
-    alert(`⛔ PERINGATAN FINAL!\nAnda telah melakukan kecurangan sebanyak ${cheatStrikes} kali.\nPelanggaran Terakhir: ${type}.\n\nUjian Anda dihentikan dan dikirim secara otomatis.`);
-    forceSubmit(); // Paksa kirim jawaban
-  } else {
-    showCheatWarning(type, cheatStrikes);
-  }
+  // Hanya memunculkan peringatan, fitur kirim otomatis (forceSubmit) DIHAPUS
+  showCheatWarning(type, cheatStrikes);
 }
 
 function showCheatWarning(reason, strikes) {
   const overlay = document.getElementById('cheat-overlay');
   document.getElementById('cheat-reason').innerText = `Terdeteksi: ${reason}`;
-  document.getElementById('cheat-strike-text').innerText = `PERINGATAN ${strikes} DARI ${MAX_STRIKES}. Jika mencapai batas, ujian OTOMATIS BERAKHIR!`;
+  document.getElementById('cheat-strike-text').innerText = `PERINGATAN! Anda telah terdeteksi melakukan aktivitas di luar ujian sebanyak ${strikes} kali.`;
 
   overlay.classList.remove('hidden');
   overlay.classList.add('flex');
