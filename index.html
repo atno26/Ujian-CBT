@@ -920,13 +920,8 @@ function handleCheatViolation(type) {
   cheatLogs.push(`${type} pada ${time}`);
   cheatStrikes++;
 
-  // Cek apakah sudah melebihi batas maksimal pelanggaran
-  if (cheatStrikes >= MAX_STRIKES) {
-    alert(`⛔ PERINGATAN FINAL!\nAnda telah melakukan kecurangan sebanyak ${cheatStrikes} kali.\nPelanggaran Terakhir: ${type}.\n\nUjian Anda dihentikan dan dikirim secara otomatis.`);
-    forceSubmit(); // Paksa kirim jawaban
-  } else {
-    showCheatWarning(type, cheatStrikes);
-  }
+  // PENGATURAN KIRIM OTOMATIS DIHAPUS: Hanya menampilkan peringatan bahaya di overlay tanpa forceSubmit()
+  showCheatWarning(type, cheatStrikes);
 }
 
 function showCheatWarning(reason, strikes) {
